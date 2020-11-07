@@ -1,0 +1,131 @@
+<html>
+
+<head>
+  <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.4.3/build/ol.js"></script>
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.4.3/css/ol.css" />
+  <script src="https://code.jquery.com/jquery-2.2.1.js"></script>
+</head>
+
+<body>
+  <div id="map" class="map2"></div>
+  <script type="text/javascript">
+    var arrNumber = ["#FBEFEF", "#F8E0E0", "#F6CECE", "#F5A9A9", "#FA5858", "#FE2E2E", "#FF0000", "#DF0101", "#B40404",
+      "#8A0808"
+    ];
+
+    var map = new ol.Map({
+      target: "map",
+      layers: [
+        new ol.layer.Tile({
+          source: new ol.source.OSM(),
+        }),
+      ],
+      view: new ol.View({
+        center: ol.proj.fromLonLat([127.0, 37.0]),
+        zoom: 6,
+      }),
+    });
+    var emdSource = new ol.source.Vector({
+      format: new ol.format.GeoJSON({
+        featureProjection: "EPSG:3857",
+      })
+    });
+
+    var style = new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: "black"
+      }),
+      text: new ol.style.Text({
+        fill: new ol.style.Fill({
+          color: "red"
+        })
+      }),
+      fill: new ol.style.Fill({
+        color: "black"
+      })
+    });
+
+    var layer = new ol.layer.Vector({
+      source: emdSource,
+      style: function (feature) {
+        if (feature.get("SIG_KOR_NM") == "마곡동") {
+          style.getFill().setColor("red")
+        } else {
+          style.getText().setText(feature.get("SIG_KOR_NM"));
+          style.getFill().setColor("black")
+         
+
+        }
+        return style;
+      }
+
+    });
+
+   var highlightStyle = new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: "yellow",
+        width:1
+      }),
+      fill : new ol.style.Fill({
+        color : "orange"
+
+      }),
+      text : new ol.style.Text({
+        fill: new ol.style.Fill({
+          color : "purple"
+        }),
+        stroke : new ol.style.Stroke({
+          color: "green",
+          width : 3
+        }),
+      }),
+    });
+
+    var featureOverlay = new ol.layer.Vector({
+  source: new ol.source.Vector(),
+  map: map,
+  style: function (feature) {
+    highlightStyle.getText().setText(feature.get('name'));
+    return highlightStyle;
+  },
+});
+
+    var highlight;
+var displayFeatureInfo = function (pixel) {
+  var feature = map.forEachFeatureAtPixel(pixel, function (feature) {
+    return feature;
+  });
+
+  if (feature !== highlight) {
+    if (highlight) {
+      featureOverlay.getSource().removeFeature(highlight);
+    }
+    if (feature) {
+      featureOverlay.getSource().addFeature(feature);
+    }
+    highlight = feature;
+  }
+};
+
+map.on('pointermove', function (evt) {
+  if (evt.dragging) {
+    return;
+  }
+  var pixel = map.getEventPixel(evt.originalEvent);
+  displayFeatureInfo(pixel);
+});
+
+map.on('click', function (evt) {
+  displayFeatureInfo(evt.pixel);
+});
+
+    $.getJSON("./emd09.geojson", function (data) {
+      emdSource.addFeatures(new ol.format.GeoJSON().readFeatures(data));
+    });
+    map.addLayer(layer)
+    //맵에 레이어 추가
+  </script>
+</body>
+
+</html>

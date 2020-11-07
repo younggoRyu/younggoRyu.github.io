@@ -1,0 +1,195 @@
+<html>
+    <head>
+        <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.4.3/build/ol.js"></script>
+        <!-- <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js" ></script> -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.4.3/css/ol.css">
+        <link rel="stylesheet" href="http://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        <title>도시재난 프로젝트</title>
+        <h2>도시재난 프로젝트</h2> 
+
+    </head>
+    <body>
+      
+        <input type="text" id ="inputId" class="inputClass" name="inputName" value="test"  style="text-align:center; width:100px; height:30px; letter-spacing: 1px">
+        <input type="button" onclick="getInputValue();" value="확인"> 
+        <div>
+            <div id="map" class="map" ></div>
+        </div>
+
+        <div>
+            <input type="text" id="data-value">
+            <div id = "slider-range-max" style="display: block;"><div>
+        </div>
+          
+
+        <script type="text/javascript">
+
+        $("#slider-range-max").slider({
+                range: "max",
+                min: 0,
+                max: 24,
+                orientation : 'horizontal',
+                animate : 'slow',
+                slide: function(event, ui) {
+                    $("#data-value").val(ui.value);
+                }
+            });
+
+       
+        
+        var resultjson = {};
+        $.getJSON("./result.json", function(data){
+          resultjson = data;
+        });
+
+        function getInputValue(){
+          var valueById = $("#inputId").val();
+          var valueByClass = $(".inputClass").val();
+          var valueByName = $("input[name=inputName").val();
+
+          alert("valueById = " + valueById +
+                "\nvalueByClass =" + valueByClass +
+                "\nvalueByName =" + valueByName);
+        }
+        var array =['#FF0000','#FF4000','#FF8000','#FFBF00',
+                    '#FFFF00','#BFFF00','#80FF00','#40FF00',
+                    '#00FF00','#00FF40'];
+      
+      var style = new ol.style.Style({
+        fill: new ol.style.Fill({
+          color: 'rgba(255, 255, 255, 0.5)',
+        }),
+        stoke: new ol.style.Stroke({
+          color: 'grey',
+          width: 1,
+        }),
+        text: new ol.style.Text({
+          font: '8px calibri,sans-serif',
+          fill: new ol.style.Fill({
+            color: 'blue',
+          }),
+          stroke: new ol.style.Stroke({
+            color: 'white',
+            width: 3,
+          }),
+        }),
+      });
+      var map = new ol.Map({
+        target: 'map',
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
+          })
+        ],
+        interactions: ol.interaction.defaults({
+          dragPan: false
+          }),
+        view: new ol.View({
+          center: ol.proj.fromLonLat([127.0016985,37.5642135]),
+          minZoom: 11,
+          zoom: 11
+        })
+      });
+            var mySource=new ol.source.Vector({
+          format: new ol.format.GeoJSON({
+            featureProjection:'EPSG:3857'
+          })
+      });
+      $.getJSON("./emd09.geojson", function(data) {
+
+        mySource.addFeatures((new ol.format.GeoJSON()).readFeatures(data));
+        }).done(function(){
+          mySource.forEachFeature(function(feature){
+          var sigCd = feature.get("SIG_CD");
+          // console.log(sigCd)
+        });
+        });
+        var Vectorlayer = new ol.layer.Vector({
+            source: mySource,
+            style: function (feature) {
+              // if(feature.get('SIG_KOR_NM')=="덕포동"){
+              //   style.getFill().setColor('red');           
+              // }
+              // else{
+              //   style.getFill().setColor('blue'');
+              // }
+
+              // style.getFill().setColor(array[generateRandom(0,9)])
+              style.getText().setText(feature.get('SIG_KOR_NM'));
+              return style;
+            }
+
+        });
+      
+
+      
+
+        var generateRandom = function(min,max){
+          var ranNum = Math.floor(Math.random()*(max-min+1))+min;
+          return ranNum;
+        }
+        map.addLayer(Vectorlayer);
+// 하이라이트 시작
+// var highlightStyle = new ol.style.Style({
+//   stroke: new ol.style.Stroke({
+//     color: '#f00',
+//     width: 1,
+//   }),
+//   fill: new ol.style.Fill({
+//     color: 'rgba(255,0,0,0.1)',
+//   }),
+//   text: new ol.style.Text({
+//     font: '12px Calibri,sans-serif',
+//     fill: new ol.style.Fill({
+//       color: '#000',
+//     }),
+//     stroke: new ol.style.Stroke({
+//       color: '#f00',
+//       width: 3,
+//     }),
+//   }),
+// });
+
+// var featureOverlay = new ol.layer.Vector({
+//     source: new ol.source.Vector(),
+// 	map: map,
+//   style: function (feature) {
+// 	  // highlightStyle.getFill().setColor(array[generateRandom(0,9)]);
+//     highlightStyle.getText().setText(feature.get('SIG_KOR_NM'));
+//     return highlightStyle;
+//   	},
+// });
+
+// var highlight;
+// var displayFeatureInfo = function (pixel) {
+//   var feature = map.forEachFeatureAtPixel(pixel, function (feature) {
+//     return feature;
+// 	 });
+// 	 if (feature !== highlight) {
+// 		 if (highlight) {
+// 			 featureOverlay.getSource().removeFeature(highlight);
+// 			 }
+// 			 if (feature) {
+// 				 featureOverlay.getSource().addFeature(feature);
+// 				 }
+// 				 highlight = feature;
+// 				 }
+// 			};
+
+// map.on('pointermove', function (evt) {
+// 	if (evt.dragging) {
+// 		return;
+// 		}
+// 		var pixel = map.getEventPixel(evt.originalEvent);
+// 		displayFeatureInfo(pixel);
+// 		});
+// 		map.on('click', function (evt) {
+// 			displayFeatureInfo(evt.pixel);
+// 			});
+
+  </script>
+  </body>
+</html>
+
