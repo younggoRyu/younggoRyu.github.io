@@ -15,9 +15,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.4.3/css/ol.css">
      
      <!-- jquery slider -->
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-
+    <script src="https://d3js.org/d3.v5.min.js"></script>
 </head>
 
 <body id="page-top">
@@ -42,8 +43,8 @@
 
             <!-- Heading -->
             <div class="sidebar-heading">
-                자연재난 시뮬레이션
-            </div>
+                도시재난 시뮬레이션
+            </div>          
 
             <!-- Nav Item - Pages Collapse Menu -->
             <li class="nav-item">
@@ -52,13 +53,26 @@
                     <span>감염병</span>
                 </a>
             </li>
+            <div class = "sidebar-heading">
+                자연재난 SEIR 모델
+            </div>
+
+             <!-- Nav Item - Pages Collapse Menu -->
+            <li class = "nav-item">
+                <a class = "nav-link collapsed" herf = "index.html" aria-expanded="true" aria-controls="collapesTwo">
+                    <a class="nav-link collapsed" href="http://222.239.90.78:53080/" id="userDropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class = "fas fa-viruses"></i>
+                        <spna>SEIR 모델</spna>
+                    </a>
+                </a>
+            </li>
   
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
 
         </ul>
         <!-- End of Sidebar -->
-
+        
         <!-- Content Wrapper -->
         <div id="content-wrapper" class="d-flex flex-column">
 
@@ -76,7 +90,6 @@
                     <!-- Topbar Search -->
                     <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
                         <div class="input-group">
-                            <input type="text" class="form-control bg-light border-0 small" placeholder="원하시는 색을 입력하세요..." aria-label="Search" aria-describedby="basic-addon2">
                             <div class="input-group-append">
                                 <button class="btn btn-default" type="button">
                                     <i class="fas fa-check fa-sm"></i>
@@ -84,15 +97,15 @@
                             </div>
                         </div>
                     </form>
-
+                    
                     <!-- Topbar Navbar -->
                     <ul class="navbar-nav ml-auto">
 
                         <!-- Nav Item - User Information -->
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">본인 이름쓰기</span>
-                                <img class="img-profile rounded-circle"src="img/undraw_profile.svg">
+                                    <span class="mr-2 d-none d-lg-inline text-gray-600 small">Ryu</span>
+                                    <img class="img-profile rounded-circle"src="img/undraw_profile.svg">
                             </a>
                         </li>
 
@@ -132,26 +145,11 @@
 
     <script type="text/javascript">
 
-    $(function(){
-        
-        //슬라이드바를 움직였을때 발생하는 change event
-        $("#rangeBar").change(function(){
-            //hour의 이름을 가진 element에게 현재의 슬라이드바의 값을 setting
-            $("#hour").text($("#rangeBar").val());
-        });
-
-        //슬라이드바의 최대 max값을 오늘날짜 - 2020/01/01까지의 날짜 차이만큼 setting
-        $("#rangeBar").attr({"max":dateDiff("2020-01-01")});
-
-    });
-
-    
     //분석결과값 전역변수에 저장
     var resultjson = {};
-    $.getJSON("./result.json", function(data){
+    $.getJSON("https://vaiv02.github.io/result.json", function(data){
         resultjson = data;
-    }); 
-
+    });
     //style 지정
     var style = new ol.style.Style({
         fill: new ol.style.Fill({
@@ -172,7 +170,20 @@
             }),
         }),
     });
-
+        // 두개의 날짜를 비교하여 차이를 알려준다. return 값 : 두 날짜의 차이 일수
+    function dateDiff(start) {
+        var startDate = start instanceof Date ? start : new Date(start);
+        //var endDate = '2020-11-20';//new Date(); //오늘날짜
+        startDate =new Date(startDate.getFullYear(), startDate.getMonth()+1, startDate.getDate());
+        endDate =new Date('2020', '11','20');
+        var diff = Math.abs(endDate.getTime() - startDate.getTime());
+        diff = Math.ceil(diff / (1000 * 3600 * 24));
+        return diff + 1;
+    }
+    function getColor(num){
+        var colorList = ["#FFE6E6","#FFCCCC","#FFB3B3","#FF8080","#FF4D4D","#FF1A1A","#E60000","#B30000","#800000","#4D0000"];
+        return colorList[Math.floor(num / 50)];     // 50씩 구분
+    }
     //map 속성지정
     var map = new ol.Map({
         target: 'map',
@@ -190,66 +201,61 @@
             zoom: 11
         })
     });
-
+    
     //좌표 + 속성정보를 저장하기 위한 source 객체 생성
     var mySource=new ol.source.Vector({
         format: new ol.format.GeoJSON({
         featureProjection:'EPSG:3857'
         })
     });
-
     //source 객체에 서울시에 대한 정보(행정구역코드, 행정구역 명 등등)와 좌표 정보 setting
-    $.getJSON("./emd09.geojson", function(data) { //./emd09.geojson
-
+    $.getJSON("sgg09.geojson", function(data) { //./emd09.geojson
         mySource.addFeatures((new ol.format.GeoJSON()).readFeatures(data));
-
     }).done(function(){ //위 로직이 완료 되면 실행
         //source 객체에 우리가 분석한 결과에 대한 속성 정보를 추가 setting
         mySource.forEachFeature(function(feature){
-            var sigCd = feature.get("SIG_CD");
-            if(resultjson[sigCd] != null){
-                var popTotal = resultjson[sigCd].POP_TOTAL;
-                feature.setProperties({"POP_TOTAL":popTotal});
-            }
-        // console.log(sigCd)
+            var featureStyle = style.clone();
+            featureStyle.getText().setText(feature.get("SIG_KOR_NM"));
+            feature.setStyle(featureStyle);
         });
     });
-
     //layer 객체 생성
     var Vectorlayer = new ol.layer.Vector({
-        source: mySource,
-        style: function (feature) {
-            // if(feature.get('SIG_KOR_NM')=="덕포동"){
-            //   style.getFill().setColor('red');           
-            // }
-            // else{
-            //   style.getFill().setColor('blue'');
-            // }
-
-            // style.getFill().setColor(array[generateRandom(0,9)])
-            style.getText().setText(feature.get('SIG_KOR_NM'));
-            return style;
-        }
-
+        source: mySource
     });
     
     //map에 layer를 올린다.
     map.addLayer(Vectorlayer);
-
-
-    // 두개의 날짜를 비교하여 차이를 알려준다. return 값 : 두 날짜의 차이 일수 
-    function dateDiff(start) {
-        var startDate = start instanceof Date ? start : new Date(start);
-        var endDate = new Date(); //오늘날짜
+    $(function(){
+        //슬라이드바를 움직였을때 발생하는 change event
+        $("#rangeBar").change(function(){
+            //hour의 이름을 가진 element에게 현재의 슬라이드바의 값을 setting
+            $("#hour").text($("#rangeBar").val());
+            //우리가 선택한 일자에 대한 정보들 가져오기
+            var obj = resultjson[$("#rangeBar").val().toString()];
+            //색칠을 위한 feature ㄱㅏ져오기
+            mySource.forEachFeature(function(feature){
+                var sigCd = feature.get("SIG_CD");
+                var color = getColor(parseInt(obj[sigCd].infected));
+                var fillColor = new ol.style.Fill({
+                    color: color
+                });
+                var feauterStyle = feature.getStyle();
+                //feauterStyle.getText().setText(feature.get('SIG_KOR_NM'));
+                feauterStyle.setFill(fillColor);
+                //var tot = parseInt로 형변환 하여 뒷 소수점 없애고 값 띄우기
+                var tot = parseInt(obj[sigCd].infected);
+                var sggNm = feature.get("SIG_KOR_NM");
+                feauterStyle.getText().setText(sggNm + "\n" + " : " + tot +"명" );   
+                feature.setStyle(feauterStyle);
+            });
+            
+        // console.log(sigCd)
+        });
+        //슬라이드바의 최대 max값을 오늘날짜 - 2020/01/20까지의 날짜 차이만큼 setting
+        $("#rangeBar").attr({"max":dateDiff("2020-01-20")});
+    });
     
-        startDate =new Date(startDate.getFullYear(), startDate.getMonth()+1, startDate.getDate());
-        endDate =new Date(endDate.getFullYear(), endDate.getMonth()+1, endDate.getDate());
-    
-        var diff = Math.abs(endDate.getTime() - startDate.getTime());
-        diff = Math.ceil(diff / (1000 * 3600 * 24));
-    
-        return diff + 1;
-    }
     
     </script>
 
